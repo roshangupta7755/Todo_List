@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo API • Task Manager</title>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --panel: #ffffff;
+            --border: #dfe6ef;
+            --text: #172033;
+            --muted: #667085;
+            --accent: #2563eb;
+            --accent-soft: #eff6ff;
+            --danger: #dc2626;
+            --success: #15803d;
+            --shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        header {
+            background: #111827;
+            color: white;
+            padding: 28px 22px;
+        }
+
+        header .wrap,
+        main {
+            max-width: 1180px;
+            margin: 0 auto;
+        }
+
+        header .wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .brand h1 { margin: 0 0 4px; font-size: 30px; }
+        .brand p { margin: 0; color: #cbd5e1; }
+
+        .badge {
+            padding: 8px 12px;
+            border: 1px solid #374151;
+            border-radius: 999px;
+            font-size: 13px;
+            color: #dbeafe;
+        }
+
+        main { padding: 28px 18px 40px; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 22px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .panel h2 { margin-top: 0; font-size: 19px; }
+
+        label {
+            display: block;
+            margin: 14px 0 7px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        input, textarea, select, button {
+            width: 100%;
+            font: inherit;
+        }
+
+        input, textarea, select {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 11px 12px;
+            outline: none;
+            background: white;
+        }
+
+        textarea { min-height: 95px; resize: vertical; }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 4px var(--accent-soft);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 11px 14px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .primary { background: var(--accent); color: white; }
+        .secondary { background: #eef2f7; color: #344054; }
+        .danger { background: #fef2f2; color: var(--danger); }
+        .small-btn { width: auto; padding: 8px 10px; font-size: 12px; }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            align-items: end;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .toolbar .filter { max-width: 260px; }
+        .toolbar .filter label { margin-top: 0; }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .count {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .table-wrap { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; min-width: 720px; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid #edf1f5; text-align: left; vertical-align: top; }
+        th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+        td { font-size: 14px; }
+
+        .title-cell { font-weight: 700; }
+        .description { color: var(--muted); margin-top: 4px; max-width: 340px; }
+
+        .message {
+            margin: 10px 0 0;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #475467;
+            display: none;
+            font-size: 13px;
+        }
+
+        .message.error { display: block; background: #fef2f2; color: #991b1b; }
+        .message.success { display: block; background: #f0fdf4; color: #166534; }
+
+        .empty {
+            text-align: center;
+            padding: 35px 12px;
+            color: var(--muted);
+        }
+
+        .footer-note {
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+            header .wrap { align-items: flex-start; flex-direction: column; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .toolbar .filter { max-width: none; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="wrap">
+        <div class="brand">
+            <h1>To-Do App</h1>
+            <p>Spring Boot + MySQL + REST API</p>
+        </div>
+        <div class="badge">7-Day Training Project</div>
+    </div>
+</header>
+
+<main>
+    <div class="grid">
+        <section class="panel">
+            <h2>Add Task</h2>
+            <form id="taskForm">
+                <label for="title">Title *</label>
+                <input id="title" name="title" maxlength="100" required placeholder="Learn Spring Boot">
+
+                <label for="description">Description</label>
+                <textarea id="description" name="description" placeholder="What should be completed?"></textarea>
+
+                <label for="taskDate">Date *</label>
+                <input id="taskDate" name="taskDate" type="date" required>
+
+                <label for="taskTime">Time</label>
+                <input id="taskTime" name="taskTime" type="time">
+
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <option value="ONGOING">ONGOING</option>
+                    <option value="FINISHED">FINISHED</option>
+                    <option value="NOT_COMPLETED">NOT_COMPLETED</option>
+                    <option value="REJECTED">REJECTED</option>
+                </select>
+
+                <div class="actions">
+                    <button class="primary" type="submit">Save Task</button>
+                    <button class="secondary" type="reset">Clear</button>
+                </div>
+                <div id="formMessage" class="message"></div>
+            </form>
+            <p class="footer-note">
+                The browser calls <code>/api/tasks</code>. After saving, the record is stored in MySQL through Spring Data JPA.
+            </p>
+        </section>
+
+        <section class="panel">
+            <div class="toolbar">
+                <div class="status">
+                    <div>
+                        <h2 style="margin-bottom:4px;">Tasks</h2>
+                        <div id="count" class="count">Loading...</div>
+                    </div>
+                </div>
+                <div class="filter">
+                    <label for="dateFilter">Filter by date</label>
+                    <input id="dateFilter" type="date">
+                </div>
+                <button class="secondary small-btn" id="clearFilter" type="button">Show All</button>
+            </div>
+
+            <div id="tableMessage" class="message"></div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Task</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="taskRows"></tbody>
+                </table>
+                <div id="empty" class="empty" style="display:none;">No tasks found.</div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+const API = '/api/tasks';
+const form = document.getElementById('taskForm');
+const titleInput = document.getElementById('title');
+const descriptionInput = document.getElementById('description');
+const dateInput = document.getElementById('taskDate');
+const timeInput = document.getElementById('taskTime');
+const statusInput = document.getElementById('status');
+const dateFilter = document.getElementById('dateFilter');
+const clearFilter = document.getElementById('clearFilter');
+const taskRows = document.getElementById('taskRows');
+const count = document.getElementById('count');
+const empty = document.getElementById('empty');
+const formMessage = document.getElementById('formMessage');
+const tableMessage = document.getElementById('tableMessage');
+
+function showMessage(element, text, type = 'success') {
+    element.textContent = text;
+    element.className = 'message ' + type;
+}
+
+function clearMessage(element) {
+    element.textContent = '';
+    element.className = 'message';
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+async function responseJson(response) {
+    const contentType = response.headers.get('content-type') || '';
+    const body = contentType.includes('application/json') ? await response.json() : null;
+    if (!response.ok) {
+        const message = body ? Object.values(body).join(', ') : `Request failed (${response.status})`;
+        throw new Error(message);
+    }
+    return body;
+}
+
+async function loadTasks() {
+    clearMessage(tableMessage);
+    const url = dateFilter.value ? `${API}/by-date?date=${encodeURIComponent(dateFilter.value)}` : API;
+
+    try {
+        const response = await fetch(url);
+        const data = await responseJson(response);
+        renderTasks(data);
+    } catch (error) {
+        showMessage(tableMessage, error.message, 'error');
+    }
+}
+
+function renderTasks(tasks) {
+    taskRows.innerHTML = '';
+    count.textContent = `${tasks.length} task${tasks.length === 1 ? '' : 's'} shown`;
+    empty.style.display = tasks.length ? 'none' : 'block';
+
+    tasks.forEach(task => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${task.id}</td>
+            <td>
+                <div class="title-cell">${escapeHtml(task.title)}</div>
+                <div class="description">${escapeHtml(task.description || '')}</div>
+            </td>
+            <td>${escapeHtml(task.taskDate || '-')}</td>
+            <td>${escapeHtml(task.taskTime || '-')}</td>
+            <td>
+                <select class="status-select" data-id="${task.id}">
+                    ${['ONGOING','FINISHED','NOT_COMPLETED','REJECTED'].map(value =>
+                        `<option value="${value}" ${value === task.status ? 'selected' : ''}>${value}</option>`
+                    ).join('')}
+                </select>
+            </td>
+            <td>
+                <button class="danger small-btn delete-btn" data-id="${task.id}" type="button">Delete</button>
+            </td>
+        `;
+        taskRows.appendChild(row);
+    });
+}
+
+form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearMessage(formMessage);
+
+    const payload = {
+        title: titleInput.value.trim(),
+        description: descriptionInput.value.trim(),
+        taskDate: dateInput.value,
+        taskTime: timeInput.value || null,
+        status: statusInput.value
+    };
+
+    try {
+        const response = await fetch(API, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        await responseJson(response);
+        form.reset();
+        dateInput.value = new Date().toISOString().slice(0, 10);
+        statusInput.value = 'ONGOING';
+        showMessage(formMessage, 'Task saved successfully.', 'success');
+        await loadTasks();
+    } catch (error) {
+        showMessage(formMessage, error.message, 'error');
+    }
+});
+
+taskRows.addEventListener('change', async (event) => {
+    if (!event.target.classList.contains('status-select')) return;
+    const id = event.target.dataset.id;
+    const status = event.target.value;
+
+    try {
+        const response = await fetch(`${API}/${id}/status?status=${encodeURIComponent(status)}`, {method: 'PATCH'});
+        await responseJson(response);
+        showMessage(tableMessage, `Task ${id} status updated to ${status}.`, 'success');
+        await loadTasks();
+    } catch (error) {
+        showMessage(tableMessage, error.message, 'error');
+    }
+});
+
+taskRows.addEventListener('click', async (event) => {
+    if (!event.target.classList.contains('delete-btn')) return;
+    const id = event.target.dataset.id;
+    if (!confirm(`Delete task ${id}?`)) return;
+
+    try {
+        const response = await fetch(`${API}/${id}`, {method: 'DELETE'});
+        await responseJson(response);
+        showMessage(tableMessage, `Task ${id} deleted.`, 'success');
+        await loadTasks();
+    } catch (error) {
+        showMessage(tableMessage, error.message, 'error');
+    }
+});
+
+dateFilter.addEventListener('change', loadTasks);
+clearFilter.addEventListener('click', () => {
+    dateFilter.value = '';
+    loadTasks();
+});
+
+form.addEventListener('reset', () => {
+    window.setTimeout(() => {
+        dateInput.value = new Date().toISOString().slice(0, 10);
+        statusInput.value = 'ONGOING';
+        clearMessage(formMessage);
+    }, 0);
+});
+
+dateInput.value = new Date().toISOString().slice(0, 10);
+loadTasks();
+</script>
+</body>
+</html>
